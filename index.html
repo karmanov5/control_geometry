@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Инструмент для проверки контрольных работ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 2px solid transparent;
+        }
+        .tab-btn.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .tab-btn:not(.active) {
+            background-color: white;
+            color: #4b5563;
+        }
+        .tab-btn:not(.active):hover {
+            background-color: #eef2ff;
+            color: #4f46e5;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .score-input {
+            width: 80px;
+            text-align: center;
+        }
+        table th {
+            cursor: pointer;
+        }
+        table th:hover .sort-icon {
+            opacity: 1;
+        }
+        .sort-icon {
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Проверка контрольной работы</h1>
+        <p class="text-gray-500 mb-6">Тема: «Четырехугольники»</p>
+
+        <!-- Переключатели вкладок -->
+        <div class="mb-6 flex space-x-2 border-b border-gray-200 pb-4">
+            <button id="tab-btn-1" class="tab-btn active">Проверка работы</button>
+            <button id="tab-btn-2" class="tab-btn">Таблица результатов</button>
+        </div>
+
+        <!-- Содержимое вкладок -->
+        <div id="tab-content-1" class="tab-content active fade-in">
+            <!-- Форма для ввода данных ученика -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">Фамилия</label>
+                    <input type="text" id="lastName" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">Имя</label>
+                    <input type="text" id="firstName" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="variant" class="block text-sm font-medium text-gray-700 mb-1">Вариант</label>
+                    <select id="variant" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="0" disabled selected>Выберите вариант</option>
+                        <option value="1">Вариант 1</option>
+                        <option value="2">Вариант 2</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Контейнер для заданий -->
+            <div id="tasks-container" class="space-y-6">
+                <p class="text-center text-gray-500 p-8">Выберите вариант, чтобы отобразить задания.</p>
+            </div>
+
+            <!-- Блок с результатами -->
+            <div id="result-summary" class="mt-8 p-6 bg-indigo-50 rounded-xl border border-indigo-200 sticky bottom-4 shadow-md hidden">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                         <h2 class="text-2xl font-bold text-gray-800">Итог:</h2>
+                         <div>
+                            <span class="text-lg font-medium text-gray-600">Всего баллов:</span>
+                            <span id="total-score" class="text-2xl font-bold text-indigo-600">0 / 20</span>
+                         </div>
+                         <div>
+                            <span class="text-lg font-medium text-gray-600">Оценка:</span>
+                            <span id="final-grade" class="text-2xl font-bold text-indigo-600">-</span>
+                         </div>
+                    </div>
+                    <button id="add-student-btn" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-indigo-700 transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        Добавить в таблицу
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-content-2" class="tab-content fade-in">
+             <div class="flex justify-between items-center mb-4 flex-wrap gap-y-2">
+                <h2 class="text-2xl font-bold text-gray-800">Список учеников</h2>
+                <div class="flex space-x-2">
+                     <button id="save-data-btn" class="bg-gray-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-gray-700 transition duration-200">
+                        Сохранить
+                    </button>
+                    <button id="import-csv-btn" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-blue-700 transition duration-200">
+                        Импорт из CSV
+                    </button>
+                    <input type="file" id="csv-file-input" class="hidden" accept=".csv">
+                    <button id="export-csv-btn" class="bg-emerald-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-emerald-700 transition duration-200">
+                        Экспорт в CSV
+                    </button>
+                </div>
+            </div>
+            <span id="save-status" class="text-xs text-gray-500 mb-4 block"></span>
+            <div class="overflow-x-auto">
+                <table id="students-table" class="min-w-full bg-white border border-gray-200 rounded-lg">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">№</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="name">
+                                <div class="flex items-center">ФИО<span class="ml-1 sort-icon">↕️</span></div>
+                            </th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 1</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 2</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 3</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 4</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 5</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 6</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 7</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Всего</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Оценка</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-table-body" class="divide-y divide-gray-200">
+                        <!-- Данные учеников будут здесь -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const testData = {
+            '1': { // Вариант 1
+                tasks: [
+                    { id: 1, part: 1, question: 'Запишите номера четырехугольников:', maxPoints: 2, subtasks: [
+                        { q: 'а) параллелограм', a: '1', max: 1 }, { q: 'б) трапеция', a: '2, 4', max: 1 }
+                    ]},
+                    { id: 2, part: 1, question: 'Запишите название четырехугольников:', maxPoints: 3, subtasks: [
+                        { q: 'а) под номером 3', a: 'квадрат', max: 1 }, { q: 'б) под номером 5', a: 'ромб', max: 1 }, { q: 'в) под номером 6', a: 'прямоугольник', max: 1 }
+                    ]},
+                    { id: 3, part: 2, question: 'Точка О - точка пересечения диагоналей ромба MNKP. Какова длина диагоналей, если MO=5 дм, NO=7 дм?', answer: 'В ромбе диагонали в точке пересечения делятся пополам. <br> MK = 2 * MO = 2 * 5 = 10 дм. <br> NP = 2 * NO = 2 * 7 = 14 дм. <br> <strong>Ответ: диагонали 10 дм и 14 дм.</strong>', maxPoints: 3 },
+                    { id: 4, part: 2, question: 'Периметр прямоугольника равен 56 см, одна из сторон равна 13 см. Найдите длины остальных сторон.', answer: 'Периметр P = 2(a+b). <br> 2(a+b) = 56, следовательно, a+b = 28. <br> Вторая сторона = 28 - 13 = 15 см. <br> <strong>Ответ: стороны 13 см и 15 см.</strong>', maxPoints: 3 },
+                    { id: 5, part: 2, question: 'Сумма двух углов параллелограмма равна 140°. Найдите углы параллелограмма.', answer: 'Сумма смежных углов параллелограмма равна 180°, значит, речь идет о противолежащих углах. <br> Угол 1 = Угол 2 = 140° / 2 = 70°. <br> Другая пара углов: 180° - 70° = 110°. <br> <strong>Ответ: углы 70° и 110°.</strong>', maxPoints: 3 },
+                    { id: 6, part: 3, question: 'Найдите периметр прямоугольника ABCD, если биссектриса АЕ делит сторону ВС на отрезки BE=40 см и EC=15 см.', answer: 'Так как BC || AD, то ∠BEA = ∠EAD (как накрест лежащие). Поскольку АЕ - биссектриса, ∠BAE = ∠EAD. <br> Следовательно, ΔABE - равнобедренный, и AB = BE = 40 см. <br> Сторона BC = BE + EC = 40 + 15 = 55 см. <br> Периметр P = 2 * (AB + BC) = 2 * (40 + 55) = 190 см. <br> <strong>Ответ: P = 190 см.</strong>', maxPoints: 3 },
+                    { id: 7, part: 3, question: 'Найдите угол ADC равнобедренной трапеции ABCD, если диагональ АС образует с основанием ВС и боковой стороной АВ углы равные 25° и 40° соответственно.', answer: 'В ΔABC: ∠BCA = 25° (т.к. ∠BCA и ∠CAD накрест лежащие). <br> ∠ABC = 180° - (∠BAC + ∠BCA) = 180° - 40° - 25° = 115°. <br> В равнобедренной трапеции углы при основании равны, а сумма углов при боковой стороне равна 180°. <br> ∠ADC = 180° - ∠ABC = 180° - 115° = 65°. <br> <strong>Ответ: ∠ADC = 65°.</strong>', maxPoints: 3 },
+                ]
+            },
+            '2': { // Вариант 2
+                tasks: [
+                    { id: 1, part: 1, question: 'Запишите номера четырехугольников:', maxPoints: 2, subtasks: [
+                        { q: 'а) ромб', a: '5', max: 1 }, { q: 'б) прямоугольник', a: '6', max: 1 }
+                    ]},
+                    { id: 2, part: 1, question: 'Запишите название четырехугольников:', maxPoints: 3, subtasks: [
+                        { q: 'а) под номером 1', a: 'параллелограмм', max: 1 }, { q: 'б) под номером 3', a: 'квадрат', max: 1 }, { q: 'в) под номером 4', a: 'трапеция', max: 1 }
+                    ]},
+                    { id: 3, part: 2, question: 'Точка О - точка пересечения диагоналей ромба ABCD. Какова длина диагоналей, если AO=6 см, BO=8 см?', answer: 'В ромбе диагонали в точке пересечения делятся пополам. <br> AC = 2 * AO = 2 * 6 = 12 см. <br> BD = 2 * BO = 2 * 8 = 16 см. <br> <strong>Ответ: диагонали 12 см и 16 см.</strong>', maxPoints: 3 },
+                    { id: 4, part: 2, question: 'Периметр прямоугольника равен 64 см, одна из сторон равна 15 см. Найдите длины остальных сторон.', answer: 'Периметр P = 2(a+b). <br> 2(a+b) = 64, следовательно, a+b = 32. <br> Вторая сторона = 32 - 15 = 17 см. <br> <strong>Ответ: стороны 15 см и 17 см.</strong>', maxPoints: 3 },
+                    { id: 5, part: 2, question: 'Сумма двух углов параллелограмма равна 120°. Найдите углы параллелограмма.', answer: 'Сумма смежных углов параллелограмма равна 180°, значит, речь идет о противолежащих углах. <br> Угол 1 = Угол 2 = 120° / 2 = 60°. <br> Другая пара углов: 180° - 60° = 120°. <br> <strong>Ответ: углы 60° и 120°.</strong>', maxPoints: 3 },
+                    { id: 6, part: 3, question: 'Найдите периметр прямоугольника ABCD, если биссектриса АЕ делит сторону ВС на отрезки BE=30 см и EC=15 см.', answer: 'Так как BC || AD, то ∠BEA = ∠EAD (как накрест лежащие). Поскольку АЕ - биссектриса, ∠BAE = ∠EAD. <br> Следовательно, ΔABE - равнобедренный, и AB = BE = 30 см. <br> Сторона BC = BE + EC = 30 + 15 = 45 см. <br> Периметр P = 2 * (AB + BC) = 2 * (30 + 45) = 150 см. <br> <strong>Ответ: P = 150 см.</strong>', maxPoints: 3 },
+                    { id: 7, part: 3, question: 'Найдите угол ADC равнобедренной трапеции ABCD, если диагональ АС образует с основанием ВС и боковой стороной АВ углы равные 30° и 45° соответственно.', answer: 'В ΔABC: ∠BCA = 30° (т.к. ∠BCA и ∠CAD накрест лежащие). <br> ∠ABC = 180° - (∠BAC + ∠BCA) = 180° - 45° - 30° = 105°. <br> В равнобедренной трапеции углы при основании равны, а сумма углов при боковой стороне равна 180°. <br> ∠ADC = 180° - ∠ABC = 180° - 105° = 75°. <br> <strong>Ответ: ∠ADC = 75°.</strong>', maxPoints: 3 },
+                ]
+            }
+        };
+
+        let students = [];
+        let sortState = { column: 'name', direction: 'asc' };
+
+        // Элементы DOM
+        const variantSelect = document.getElementById('variant');
+        const tasksContainer = document.getElementById('tasks-container');
+        const resultSummary = document.getElementById('result-summary');
+        const totalScoreEl = document.getElementById('total-score');
+        const finalGradeEl = document.getElementById('final-grade');
+        const addStudentBtn = document.getElementById('add-student-btn');
+        const importCsvBtn = document.getElementById('import-csv-btn');
+        const csvFileInput = document.getElementById('csv-file-input');
+        const saveDataBtn = document.getElementById('save-data-btn');
+        const saveStatusEl = document.getElementById('save-status');
+
+        const STORAGE_KEY = 'teacherAppStudentsData';
+
+        // Загрузка данных при старте
+        loadStudents();
+
+        // Автосохранение каждые 3 минуты
+        setInterval(saveStudents, 3 * 60 * 1000);
+
+        // Переключение вкладок
+        const tabBtns = [document.getElementById('tab-btn-1'), document.getElementById('tab-btn-2')];
+        const tabContents = [document.getElementById('tab-content-1'), document.getElementById('tab-content-2')];
+        
+        tabBtns.forEach((btn, index) => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                tabContents[index].classList.add('active');
+            });
+        });
+
+        // Обработчик выбора варианта
+        variantSelect.addEventListener('change', () => {
+            const variant = variantSelect.value;
+            if (variant !== '0') {
+                renderTasks(variant);
+                resultSummary.classList.remove('hidden');
+            } else {
+                tasksContainer.innerHTML = '<p class="text-center text-gray-500 p-8">Выберите вариант, чтобы отобразить задания.</p>';
+                resultSummary.classList.add('hidden');
+            }
+            updateCalculations();
+        });
+
+        function renderTasks(variant) {
+            tasksContainer.innerHTML = '';
+            const data = testData[variant].tasks;
+            
+            data.forEach((task, index) => {
+                const taskEl = document.createElement('div');
+                taskEl.className = 'p-5 bg-white rounded-xl shadow border border-gray-200';
+                let content = `
+                    <div class="flex flex-wrap justify-between items-start gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Задание ${task.id}</h3>
+                            <p class="mt-1 text-gray-600">${task.question}</p>
+                        </div>
+                        <div class="flex items-center space-x-2 p-2 bg-gray-100 rounded-lg">
+                            <span class="font-semibold text-gray-700">Баллы:</span>
+                `;
+
+                if (task.subtasks) {
+                    task.subtasks.forEach((sub, subIndex) => {
+                        content += `
+                            <select class="score-input p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" data-task-id="${task.id}" data-subtask-index="${subIndex}">
+                                ${Array.from({length: sub.max + 1}, (_, i) => `<option value="${i}">${i}</option>`).join('')}
+                            </select>
+                        `;
+                    });
+                } else {
+                     content += `
+                        <select class="score-input p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" data-task-id="${task.id}">
+                            ${Array.from({length: task.maxPoints + 1}, (_, i) => `<option value="${i}">${i}</option>`).join('')}
+                        </select>
+                     `;
+                }
+
+                content += `
+                            <span class="font-semibold text-gray-500">/ ${task.maxPoints}</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                        <p class="text-sm font-medium text-green-800">Решение:</p>
+                `;
+
+                 if (task.subtasks) {
+                    task.subtasks.forEach(sub => {
+                        content += `<p class="text-sm text-green-700">${sub.q}: <strong>${sub.a}</strong></p>`;
+                    });
+                } else {
+                    content += `<p class="text-sm text-green-700">${task.answer}</p>`;
+                }
+
+                content += '</div></div>';
+                taskEl.innerHTML = content;
+                tasksContainer.appendChild(taskEl);
+            });
+
+            document.querySelectorAll('.score-input').forEach(input => {
+                input.addEventListener('change', updateCalculations);
+            });
+        }
+
+        function updateCalculations() {
+            if (variantSelect.value === '0') return;
+
+            const scores = getCurrentScores();
+            const partScores = { 1: 0, 2: 0, 3: 0 };
+            
+            testData[variantSelect.value].tasks.forEach(task => {
+                partScores[task.part] += scores[task.id] || 0;
+            });
+            
+            const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+            const grade = calculateGrade(totalScore, partScores);
+
+            totalScoreEl.textContent = `${totalScore} / 20`;
+            finalGradeEl.textContent = grade;
+            
+            const lastName = document.getElementById('lastName').value.trim();
+            const firstName = document.getElementById('firstName').value.trim();
+            addStudentBtn.disabled = !(lastName && firstName);
+        }
+
+        function getCurrentScores() {
+            const scores = {};
+            const variant = variantSelect.value;
+            if (variant === '0') return scores;
+
+            testData[variant].tasks.forEach(task => {
+                if (task.subtasks) {
+                    let taskScore = 0;
+                    document.querySelectorAll(`.score-input[data-task-id="${task.id}"]`).forEach(select => {
+                        taskScore += parseInt(select.value, 10);
+                    });
+                    scores[task.id] = taskScore;
+                } else {
+                    const select = document.querySelector(`.score-input[data-task-id="${task.id}"]`);
+                    scores[task.id] = select ? parseInt(select.value, 10) : 0;
+                }
+            });
+            return scores;
+        }
+        
+        function calculateGrade(total, parts) {
+            if (total >= 18 && parts[1] >= 3 && parts[2] >= 5 && parts[3] >= 4) return '5';
+            if (total >= 13 && parts[1] >= 3 && parts[2] >= 5) return '4';
+            if (total >= 8 && parts[1] >= 3) return '3';
+            return '2';
+        }
+
+        document.getElementById('lastName').addEventListener('input', updateCalculations);
+        document.getElementById('firstName').addEventListener('input', updateCalculations);
+
+        addStudentBtn.addEventListener('click', () => {
+            const lastName = document.getElementById('lastName').value.trim();
+            const firstName = document.getElementById('firstName').value.trim();
+            if (!lastName || !firstName) return;
+
+            const scores = getCurrentScores();
+            const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+            const partScores = { 1: 0, 2: 0, 3: 0 };
+            testData[variantSelect.value].tasks.forEach(task => {
+                partScores[task.part] += scores[task.id] || 0;
+            });
+            const grade = calculateGrade(totalScore, partScores);
+
+            students.push({
+                name: `${lastName} ${firstName}`,
+                scores: scores,
+                total: totalScore,
+                grade: grade
+            });
+
+            renderTable();
+            saveStudents(); // Сохраняем после добавления
+            
+            // Переключиться на вторую вкладку
+            tabBtns[1].click();
+
+            // Очистить форму
+            document.getElementById('lastName').value = '';
+            document.getElementById('firstName').value = '';
+            variantSelect.value = '0';
+            tasksContainer.innerHTML = '<p class="text-center text-gray-500 p-8">Выберите вариант, чтобы отобразить задания.</p>';
+            resultSummary.classList.add('hidden');
+        });
+
+        function renderTable() {
+            const tbody = document.getElementById('students-table-body');
+            tbody.innerHTML = '';
+            
+            students.sort((a, b) => {
+                if (sortState.column === 'name') {
+                    const comparison = a.name.localeCompare(b.name);
+                    return sortState.direction === 'asc' ? comparison : -comparison;
+                }
+                return 0;
+            });
+            
+            students.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+
+                let cells = `
+                    <td class="py-3 px-4 text-sm text-gray-500">${index + 1}</td>
+                    <td class="py-3 px-4 text-sm font-medium text-gray-900">${student.name}</td>
+                `;
+
+                for (let i = 1; i <= 7; i++) {
+                    const score = student.scores[i] !== undefined ? student.scores[i] : '-';
+                    const maxScore = testData['1'].tasks.find(t=>t.id === i).maxPoints;
+                    let bgColor = '';
+                    if (score === 0) {
+                        bgColor = 'bg-red-100 text-red-800';
+                    } else if (score < maxScore / 2) {
+                        bgColor = 'bg-yellow-100 text-yellow-800';
+                    }
+                    cells += `<td class="py-3 px-4 text-sm text-center font-mono ${bgColor}">${score}</td>`;
+                }
+
+                cells += `
+                    <td class="py-3 px-4 text-sm font-semibold text-gray-800 text-center">${student.total}</td>
+                    <td class="py-3 px-4 text-sm font-bold text-center ${student.grade <= '2' ? 'text-red-600' : 'text-indigo-600'}">${student.grade}</td>
+                `;
+                
+                row.innerHTML = cells;
+                tbody.appendChild(row);
+            });
+        }
+
+        document.querySelectorAll('#students-table th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const column = th.dataset.sort;
+                if (sortState.column === column) {
+                    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortState.column = column;
+                    sortState.direction = 'asc';
+                }
+                renderTable();
+            });
+        });
+
+        // Ручное сохранение
+        saveDataBtn.addEventListener('click', saveStudents);
+
+        // Экспорт в CSV
+        document.getElementById('export-csv-btn').addEventListener('click', () => {
+            if (students.length === 0) return;
+            
+            const headers = ['№', 'ФИО', 'Зад. 1', 'Зад. 2', 'Зад. 3', 'Зад. 4', 'Зад. 5', 'Зад. 6', 'Зад. 7', 'Всего', 'Оценка'];
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + '\n';
+
+            students.forEach((student, index) => {
+                const row = [
+                    index + 1,
+                    `"${student.name}"`,
+                    student.scores[1] ?? 0,
+                    student.scores[2] ?? 0,
+                    student.scores[3] ?? 0,
+                    student.scores[4] ?? 0,
+                    student.scores[5] ?? 0,
+                    student.scores[6] ?? 0,
+                    student.scores[7] ?? 0,
+                    student.total,
+                    student.grade
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        importCsvBtn.addEventListener('click', () => {
+            csvFileInput.click();
+        });
+
+        csvFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    parseCSVAndImport(e.target.result);
+                } catch (error) {
+                    console.error("Ошибка при импорте CSV:", error);
+                }
+            };
+            reader.readAsText(file);
+            csvFileInput.value = ''; 
+        });
+
+        function parseCSVAndImport(csvText) {
+            const lines = csvText.trim().split('\n');
+            const newStudents = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length < 11) continue;
+
+                const student = {
+                    name: values[1].replace(/"/g, ''),
+                    scores: {
+                        '1': parseInt(values[2], 10), '2': parseInt(values[3], 10), '3': parseInt(values[4], 10),
+                        '4': parseInt(values[5], 10), '5': parseInt(values[6], 10), '6': parseInt(values[7], 10),
+                        '7': parseInt(values[8], 10),
+                    },
+                    total: parseInt(values[9], 10),
+                    grade: values[10]
+                };
+                newStudents.push(student);
+            }
+
+            // Добавляем новых учеников к существующему списку
+            students.push(...newStudents);
+            // В реальном приложении можно добавить логику удаления дубликатов
+
+            renderTable(); // Перерисовываем таблицу с новыми данными
+            saveStudents(); // Сохраняем после импорта
+        }
+
+        // --- Функции для локального сохранения ---
+
+        function saveStudents() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                saveStatusEl.textContent = `Данные сохранены локально в ${timeString}`;
+                saveStatusEl.classList.remove('text-red-500');
+                saveStatusEl.classList.add('text-gray-500');
+            } catch (e) {
+                console.error("Ошибка при сохранении данных:", e);
+                saveStatusEl.textContent = "Ошибка сохранения. Возможно, хранилище переполнено.";
+                saveStatusEl.classList.add('text-red-500');
+            }
+        }
+
+        function loadStudents() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                try {
+                    const parsedData = JSON.parse(savedData);
+                    if(Array.isArray(parsedData)) {
+                        students = parsedData;
+                        renderTable();
+                        saveStatusEl.textContent = "Данные успешно загружены из последнего сохранения.";
+                    }
+                } catch (e) {
+                    console.error("Ошибка при загрузке данных:", e);
+                    students = [];
+                    saveStatusEl.textContent = "Ошибка при чтении сохраненных данных.";
+                    saveStatusEl.classList.add('text-red-500');
+                }
+            } else {
+                 saveStatusEl.textContent = "Локальное сохранение не найдено.";
+            }
+        }
+
+    });
+</script>
+
+</body>
+</html>
+
