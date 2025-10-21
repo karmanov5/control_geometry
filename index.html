@@ -144,6 +144,7 @@
                             <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="name">
                                 <div class="flex items-center">ФИО<span class="ml-1 sort-icon">↕️</span></div>
                             </th>
+                            <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Вариант</th>
                             <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 1</th>
                             <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 2</th>
                             <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 3</th>
@@ -361,7 +362,8 @@
         addStudentBtn.addEventListener('click', () => {
             const lastName = document.getElementById('lastName').value.trim();
             const firstName = document.getElementById('firstName').value.trim();
-            if (!lastName || !firstName) return;
+            const variant = variantSelect.value;
+            if (!lastName || !firstName || variant === '0') return;
 
             const scores = getCurrentScores();
             const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
@@ -373,6 +375,7 @@
 
             students.push({
                 name: `${lastName} ${firstName}`,
+                variant: variant,
                 scores: scores,
                 total: totalScore,
                 grade: grade
@@ -411,6 +414,7 @@
                 let cells = `
                     <td class="py-3 px-4 text-sm text-gray-500">${index + 1}</td>
                     <td class="py-3 px-4 text-sm font-medium text-gray-900">${student.name}</td>
+                    <td class="py-3 px-4 text-sm text-gray-700 text-center">${student.variant}</td>
                 `;
 
                 for (let i = 1; i <= 7; i++) {
@@ -455,13 +459,14 @@
         document.getElementById('export-csv-btn').addEventListener('click', () => {
             if (students.length === 0) return;
             
-            const headers = ['№', 'ФИО', 'Зад. 1', 'Зад. 2', 'Зад. 3', 'Зад. 4', 'Зад. 5', 'Зад. 6', 'Зад. 7', 'Всего', 'Оценка'];
+            const headers = ['№', 'ФИО', 'Вариант', 'Зад. 1', 'Зад. 2', 'Зад. 3', 'Зад. 4', 'Зад. 5', 'Зад. 6', 'Зад. 7', 'Всего', 'Оценка'];
             let csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + '\n';
 
             students.forEach((student, index) => {
                 const row = [
                     index + 1,
                     `"${student.name}"`,
+                    student.variant,
                     student.scores[1] ?? 0,
                     student.scores[2] ?? 0,
                     student.scores[3] ?? 0,
@@ -510,17 +515,22 @@
 
             for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].split(',');
-                if (values.length < 11) continue;
+                if (values.length < 12) continue;
 
                 const student = {
                     name: values[1].replace(/"/g, ''),
+                    variant: values[2],
                     scores: {
-                        '1': parseInt(values[2], 10), '2': parseInt(values[3], 10), '3': parseInt(values[4], 10),
-                        '4': parseInt(values[5], 10), '5': parseInt(values[6], 10), '6': parseInt(values[7], 10),
-                        '7': parseInt(values[8], 10),
+                        '1': parseInt(values[3], 10),
+                        '2': parseInt(values[4], 10),
+                        '3': parseInt(values[5], 10),
+                        '4': parseInt(values[6], 10),
+                        '5': parseInt(values[7], 10),
+                        '6': parseInt(values[8], 10),
+                        '7': parseInt(values[9], 10),
                     },
-                    total: parseInt(values[9], 10),
-                    grade: values[10]
+                    total: parseInt(values[10], 10),
+                    grade: values[11]
                 };
                 newStudents.push(student);
             }
