@@ -154,6 +154,7 @@
                             <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Зад. 7</th>
                             <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Всего</th>
                             <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Оценка</th>
+                            <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действие</th>
                         </tr>
                     </thead>
                     <tbody id="students-table-body" class="divide-y divide-gray-200">
@@ -214,6 +215,7 @@
         const csvFileInput = document.getElementById('csv-file-input');
         const saveDataBtn = document.getElementById('save-data-btn');
         const saveStatusEl = document.getElementById('save-status');
+        const studentsTableBody = document.getElementById('students-table-body');
 
         const STORAGE_KEY = 'teacherAppStudentsData';
 
@@ -394,10 +396,23 @@
             tasksContainer.innerHTML = '<p class="text-center text-gray-500 p-8">Выберите вариант, чтобы отобразить задания.</p>';
             resultSummary.classList.add('hidden');
         });
+        
+        // Обработчик для удаления учеников (делегирование событий)
+        studentsTableBody.addEventListener('click', (event) => {
+            const deleteBtn = event.target.closest('.delete-btn');
+            if (deleteBtn) {
+                const studentIndex = parseInt(deleteBtn.dataset.index, 10);
+                if (!isNaN(studentIndex) && students[studentIndex]) {
+                    students.splice(studentIndex, 1);
+                    renderTable();
+                    saveStudents();
+                }
+            }
+        });
+
 
         function renderTable() {
-            const tbody = document.getElementById('students-table-body');
-            tbody.innerHTML = '';
+            studentsTableBody.innerHTML = '';
             
             students.sort((a, b) => {
                 if (sortState.column === 'name') {
@@ -432,10 +447,15 @@
                 cells += `
                     <td class="py-3 px-4 text-sm font-semibold text-gray-800 text-center">${student.total}</td>
                     <td class="py-3 px-4 text-sm font-bold text-center ${student.grade <= '2' ? 'text-red-600' : 'text-indigo-600'}">${student.grade}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button class="delete-btn text-gray-400 hover:text-red-600 transition-colors duration-200" data-index="${index}" title="Удалить">
+                            <svg class="w-5 h-5 pointer-events-none" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg>
+                        </button>
+                    </td>
                 `;
                 
                 row.innerHTML = cells;
-                tbody.appendChild(row);
+                studentsTableBody.appendChild(row);
             });
         }
 
